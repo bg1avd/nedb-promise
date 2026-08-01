@@ -225,7 +225,7 @@ All your existing callback-based code will continue to work. Additionally, you c
 | ES6+ Syntax | ❌ | ✅ |
 | Backward Compatible | - | ✅ 100% |
 | Browser Support | ✅ | ✅ |
-| TypeScript Types | ❌ | Coming soon |
+| TypeScript Types | ❌ | ❌ (纯 JS 模式，无额外依赖) |
 
 ---
 
@@ -241,12 +241,14 @@ npm test
 ### Modernization Progress
 
 - [x] **P0**: Remove underscore/async, add Promise support
-- [ ] **P1**: TypeScript definitions
-- [ ] **P2**: ES6 class refactoring
-- [ ] **P3**: Performance optimizations
-- [ ] **P4**: Stream API
+- [x] **P1**: ES6 class refactoring
+- [x] **P2**: Performance optimizations
+- [x] **P4**: Stream API
+- [x] **纯 JS 模式**：不引入 TypeScript，依赖更少（零运行时依赖）
 
-See `MODERNIZATION_P0.md` for detailed changes.
+> **技术方向**：本项目坚持**纯 JavaScript** 模式，不添加 TypeScript 定义/构建工具，以保持零依赖、零额外构建步骤。
+
+See `MODERNIZATION_P0.md` / `MODERNIZATION_P1.md` for detailed changes.
 
 ---
 

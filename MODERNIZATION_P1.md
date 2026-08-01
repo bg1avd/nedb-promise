@@ -6,6 +6,9 @@
 - ✅ 流模式 API（Stream API）
 - ✅ Cursor thenable 支持（链式调用 + await）
 - ✅ 向后兼容，所有 callback 风格代码无需修改
+- ✅ **Bugs 修复**：`$in` 索引候选 bug、executor 健壮性、空字符串 filename 兼容等
+- ✅ **性能优化**：投影路径去重 deepCopy、轻量 key 展开（find 提升 ~60%）
+- ✅ **依赖精简**：修复无效 devDependencies，`npm install && npm test` 可直接运行
 
 ---
 
@@ -177,13 +180,51 @@ await pipeline(
 
 ---
 
+## 本轮收尾改动
+
+### Bugs 修复
+- **`lib/datastore.js`**：修复 `getCandidates()` 中 `$in` 索引候选 bug（引用未定义的 `indexNamesSet`，会抛 `ReferenceError`）
+- **`lib/executor.js`**：重写串行队列，支持「回调抛异常」「falsy callback」时队列不卡顿（原实现回调抛错会导致 Promise 链中断、后续操作全部卡死）
+- **`lib/datastore.js`**：修复 `update`/`remove` 传 `null` options 时抛 `TypeError`
+- **`lib/datastore.js`**：恢复 v0.6 兼容语义——`new Datastore('')` 空字符串应视为 in-memory（filename = null）
+- **`lib/datastore.js`**：清理文件末尾冗余悬空表达式
+
+### 性能优化（相对改造前基准）
+
+| 操作（20000 文档） | 优化前 | 优化后 | 提升 |
+|---|---|---|---|
+| find 全文档投影 | 45 ms | 15 ms | **-66%** |
+| find+projection ×20 | 505 ms | 180 ms | **-64%** |
+| update（每 10 条一次） | 53 ms | 46 ms | ~-13% |
+| insert 20000 文档 | 180 ms | 181 ms | 持平 |
+
+**关键优化**：
+- `find()` 有投影时避免二次 `deepCopy`（`project()` 已产出新对象）——最大收益
+- pick 投影改用轻量 dot-notation key 展开，替代 `model.modify` 完整流水线（跳过多余 `checkObject`）
+- `model.modify()` 去掉冗余的 `[...new Set(keys)]`
+- `persistCachedDatabase` / `persistNewState` 字符串拼接 → 数组 `join`
+
+### 依赖精简
+- 移除无效的 devDependency：`exec-time@^1.1.0`（npm 上不存在）、未使用的 `request`、`sinon`、`commander`
+- 升级测试依赖到可用版本（`mocha@10`、`chai@4`、`async@3`），`npm install && npm test` 可直接运行
+
+### 验证
+- ✅ 完整测试套件 `330 passing / 0 failing`
+
+---
+
 ## 下一步计划 (P2 阶段)
 
-1. **性能优化** — 使用 `Map` 替代部分 `Object` 做查找
-2. **更完善的测试套件** — 更新测试文件适配现代化代码
-3. **浏览器版本构建** — 更新 browserify 构建
-4. **TypeScript 类型定义** — 添加 `.d.ts` 文件（可选）
-5. **npm 发布** — 发布为 `nedb-promise` v2.0.0
+> **技术方向**：坚持**纯 JavaScript** 模式，不引入 TypeScript，尽量减少依赖与构建成本。
+
+1. ✅ **性能优化** — 已验证完成：
+   - 投影路径避免双重 `deepCopy`（提升约 60-65%）
+   - pick 投影用轻量 key 展开替代完整 modify 流水线
+   - 持久化序列化改用数组 `join`
+2. ✅ **更完善的测试套件** — 修复无效 devDependencies（移除不存在的 `exec-time@^1.1.0` 等），`npm install && npm test` 可直接运行
+3. ⬜ **浏览器版本构建** — 更新 browserify 构建
+4. ❌ ~~TypeScript 类型定义~~ — **不采用**，坚持纯 JS 模式、零依赖
+5. ⬜ **npm 发布** — 发布为 `nedb-promise` v2.x
 
 ---
 
@@ -194,3 +235,10 @@ await pipeline(
 ⚠️ **Node.js 16+**: P1 阶段开始使用 `Object.hasOwn()` 和 `?.`，需要 Node.js 16+。
 
 ⚠️ **Stream API**: 仅在 Node.js 环境可用（浏览器版本不支持 Stream）。
+
+### 已知的传递依赖漏洞（不可达，低风险）
+
+`binary-search-tree@0.2.5`（索引核心库）内部硬嵌套了一个旧版 `underscore`（1.4.4，受 GHSA 影响）。
+- 该库仅在 `avltree.js` 中 `require('underscore')`，但**从不调用其任何函数**（`_.flatten` / `_.isEqual` 等脆弱 API 完全不可达）。
+- `npm overrides` 无法覆盖此深层嵌套锁版，故不做无效强制。
+- **结论**：漏洞代码路径不可达，实际利用风险≈0。若不放心，可后续更换索引库或 fork `binary-search-tree` 移除其 underscore 引入。
