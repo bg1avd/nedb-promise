@@ -17,7 +17,6 @@ browser-version/node_modules/
 # Documentation (not needed at runtime)
 MODERNIZATION_P0.md
 MODERNIZATION_P1.md
-README_PROMISE.md
 
 # Obsolete package managers
 bower.json
