@@ -17,6 +17,8 @@ node_modules
 
 browser-version/src
 browser-version/node_modules
+browser-version/.browser-build
+browser-version/build-tmp
 
 *.swp
 *~

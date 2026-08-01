@@ -1,8 +1,8 @@
 {
-  "dependencies": {
-    "async": "~0.2.9",
-    "fs-extra": "~0.6.3",
-    "uglify-js": "~2.3.6",
-    "browserify": "~2.25.0"
+  "name": "nedb-browser-version",
+  "private": true,
+  "description": "Browser build for NeDB Promise. Built from the repo root via esbuild.",
+  "scripts": {
+    "build": "node build-modern.js"
   }
 }
