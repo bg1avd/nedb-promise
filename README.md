@@ -3,6 +3,7 @@
 > **A modernized fork of [NeDB](https://github.com/louischatriot/nedb) with Promise/async-await support**
 
 [![npm version](https://img.shields.io/npm/v/@raolin2025%2Fnedb-promise.svg)](https://www.npmjs.com/package/@raolin2025/nedb-promise)
+[![CI](https://github.com/bg1avd/nedb-promise/actions/workflows/ci.yml/badge.svg)](https://github.com/bg1avd/nedb-promise/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 📦 About
@@ -275,6 +276,26 @@ npm install
 npm test
 ```
 
+### Release Process
+
+发布前的三道闸门完全一致（单测 → `prepublish-check` → 浏览器产物一致性），两条路径任选：
+
+**1. CI 自动发布（推荐）** —— 打 tag 触发，不依赖本机凭据：
+
+```bash
+npm version patch --no-git-tag-version   # 同时更新 package.json 与 package-lock.json 的版本
+# 手工补 README 的 Changelog 小节
+git commit -am "release: v2.0.3"
+git tag v2.0.3
+git push <remote> v2.0.3
+```
+
+`.github/workflows/release.yml` 会依次校验「tag 与 `package.json` 版本一致」→ 单测 → `prepublish-check` → 浏览器产物同步 → `npm publish --provenance`（附带来源证明）→ 创建 GitHub Release。
+*前置条件*：仓库需配置 `NPM_TOKEN` secret（Settings → Secrets and variables → Actions）。
+
+**2. 本地发布（应急）**：`npm publish`（`prepublishOnly` 自动跑校验）。
+⚠️ 若走 npm 的 manual PUT 兜底通道，它**不会**触发 `prepublishOnly`，务必先手动 `npm run prepublish-check`。
+
 ### Pre-publish Checks
 
 发布前自动校验（`npm publish` 会通过 `prepublishOnly` 强制执行）：
@@ -287,6 +308,10 @@ npm run prepublish-check
 1. README 的安装命令引用的包名 == `package.json` 的 `name`（含无 scope 裸名/错误 badge 的负向断言）
 2. README 的依赖口径与 `package.json` 的 `dependencies` 一致（不得声称项目没有运行时依赖）
 3. `npm pack` 产出的文件清单不含 `test/` `benchmarks/` `test_lac/` `MODERNIZATION_*.md` `.npmrc` 等不应发布的内容
+
+### Contributing
+
+见 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
 
 ### Modernization Progress
 

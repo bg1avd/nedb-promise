@@ -1,0 +1,83 @@
+name: Release
+
+# 语义：打 tag 即发布。tag 必须是 v<package.json version>（如 v2.0.3）。
+# 发布前会自动跑：单测 → prepublish-check（包名/依赖口径/tarball 白名单）→ 浏览器构建一致性
+# 然后 npm publish --provenance（附带 npm 来源证明）+ 创建 GitHub Release。
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # 创建 GitHub Release
+  id-token: write # npm provenance
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} 与 package.json ${PKG} 不一致（先 bump 版本再打 tag）"
+            exit 1
+          fi
+          echo "tag ${GITHUB_REF_NAME} ✅ 与 package.json ${PKG} 一致"
+
+      - name: Require NPM_TOKEN secret
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::仓库未配置 NPM_TOKEN secret：Settings → Secrets and variables → Actions → New repository secret（值为 npm granular token，需 Read and write 权限）"
+            exit 1
+          fi
+          echo "NPM_TOKEN 已配置 ✅"
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Pre-publish consistency check
+        run: npm run prepublish-check
+
+      - name: Build browser bundle
+        run: npm run build:browser
+
+      - name: Assert committed bundle matches source
+        run: |
+          if ! git diff --quiet -- browser-version/out; then
+            echo "::error::browser-version/out 与 lib/ 源码不同步，请本地运行 npm run build:browser 并提交产物后再打 tag"
+            git diff --stat -- browser-version/out
+            exit 1
+          fi
+
+      - name: Publish to npm (with provenance)
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
