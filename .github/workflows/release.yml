@@ -8,6 +8,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '只校验不发布（用于确认 NPM_TOKEN 是否配好）'
+        type: boolean
+        default: true
 
 permissions:
   contents: write # 创建 GitHub Release
@@ -36,6 +42,7 @@ jobs:
         run: npm ci
 
       - name: Verify tag matches package.json version
+        if: github.ref_type == 'tag'
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           PKG="$(node -p "require('./package.json').version")"
@@ -73,11 +80,24 @@ jobs:
           fi
 
       - name: Publish to npm (with provenance)
+        if: github.ref_type == 'tag' && inputs.dry_run != true
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
+        if: github.ref_type == 'tag' && inputs.dry_run != true
         run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary (dry run)
+        if: inputs.dry_run == true || github.ref_type != 'tag'
+        run: |
+          echo "### dry run 通过 ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "NPM_TOKEN 已就绪、单测与发布前校验全部通过，正式发版请：" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "npm version patch --no-git-tag-version   # 补完 Changelog 后提交" >> $GITHUB_STEP_SUMMARY
+          echo "git commit -am 'release: vX.Y.Z' && git tag vX.Y.Z && git push nedb-promise vX.Y.Z" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
