@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - modernization-p1
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test / node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # package-lock.json 为 lockfileVersion 3，故最低 Node 18（engines 声明 >=16，
+        # 但 Node 16 自带的 npm 8 无法消费该 lockfile）
+        node: ['18', '20', '22']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      # 守门人：包名一致性 / 依赖口径 / npm pack 产物白名单
+      # （发布时由 prepublishOnly 触发，这里在每次 PR 上提前拦下）
+      - name: Pre-publish consistency check
+        run: npm run prepublish-check
+
+  browser-build:
+    name: browser build (esbuild)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build browser bundle
+        run: npm run build:browser
+
+      - name: Assert bundle is non-empty and free of Node stream
+        run: |
+          test -s browser-version/out/nedb.js
+          test -s browser-version/out/nedb.min.js
+          node -e '
+            const fs = require("fs");
+            const bundle = fs.readFileSync("browser-version/out/nedb.js", "utf8");
+            if (/require\(\s*["\x27]stream["\x27]\s*\)/.test(bundle)) {
+              console.error("browser bundle 引用了 Node 内置 stream（应被 stub 掉）");
+              process.exit(1);
+            }
+            console.log("bundle 大小:", bundle.length, "bytes");
+          '
+
+      # out/ 是随源码一起提交的构建产物，防止"改了 lib/ 忘记重建 bundle"
+      - name: Assert committed bundle matches source
+        run: |
+          if ! git diff --quiet -- browser-version/out; then
+            echo "::error::browser-version/out 与 lib/ 源码不同步，请本地运行 npm run build:browser 并提交产物"
+            git diff --stat -- browser-version/out
+            exit 1
+          fi
+          echo "browser-version/out 与源码同步 ✅"
