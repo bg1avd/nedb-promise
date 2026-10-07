@@ -329,6 +329,14 @@ See `MODERNIZATION_P0.md` / `MODERNIZATION_P1.md` for detailed changes.
 
 ## 📝 Changelog
 
+### Version 2.0.3
+
+- 🚀 **CI/CD 自动化**：新增 GitHub Actions —— Node 18 / 20 / 22 单测矩阵 + `prepublish-check` + 浏览器产物与源码一致性校验
+- 🏷️ **打 tag 即发布**：推送 `v*` tag 自动完成「校验 tag 与 `package.json` 版本一致 → 单测 → 发布前校验 → 产物一致性 → `npm publish --provenance`（附 npm 来源证明）→ 创建 GitHub Release」
+- 🔒 分支保护：`main` / `modernization-p1` 要求 4 项 CI 检查通过（admin 保留 bypass，以支持维护者直推）
+- 📄 新增 [`CONTRIBUTING.md`](CONTRIBUTING.md)；README 补 CI badge 与 Release Process 章节
+- 🧹 维护：`actions/checkout` / `actions/setup-node` 升级至 v7（消除 Node 20 运行时弃用告警）；`package-lock.json` 版本号与 `package.json` 对齐
+
 ### Version 2.0.2
 
 - 📛 **文档/元数据修复**：README 全部安装命令与示例改为真实包名 `@raolin2025/nedb-promise`（此前写成无 scope 的 `nedb-promise`，会指向 npm 上 jrop 的另一个包）
