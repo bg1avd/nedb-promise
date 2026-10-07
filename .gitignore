@@ -29,3 +29,6 @@ browser-version/build-tmp
 
 # Claude Code sessions (not project content)
 .claude-code/
+
+# Local-only reference doc (deliberately untracked, kept on disk)
+CI_NPM_RELEASE_GUIDE.md
