@@ -37,6 +37,24 @@ PR 需全部通过后方可合并。
 - **npm 凭据**：只放在用户级 `~/.npmrc`。项目级 `.npmrc` 优先级更高，在此内嵌 token 会静默覆盖用户级配置并导致 `401`（曾因此排查了数小时级的问题）。
 - **不要提交**：`.npmrc`、`workspace/`、`test/`、`benchmarks/`、`test_lac/`（`.gitignore` 与 package.json 的 `files` 白名单已覆盖，请勿放宽）。
 
+## 分支保护与 required checks
+
+`main` 与 `modernization-p1` 启用了 ruleset（名称「分支保护规则」，Target: 这两个分支）：
+
+- 变更需通过 pull request，且 **4 项 CI 检查全部通过**：
+  `test / node 18`、`test / node 20`、`test / node 22`、`browser build (esbuild)`
+- 禁止 force push、禁止删除分支
+- `Required approvals = 0` —— 不需要他人批准，CI 绿即可合并
+
+⚠️ **两个容易踩的点**
+
+1. **required check 按 job 名匹配**。若修改了 `.github/workflows/ci.yml` 里的 `jobs.<id>.name`，
+   必须同步更新 ruleset 中的 required checks —— 否则旧名字会永远停在
+   *Expected — waiting for status*，导致所有 PR 都无法合并。
+2. ruleset 的 `Bypass list` 含 `Repository admin (Always allow)`，**维护者可绕过上述规则直推**
+   （push 时 GitHub 会打印 `Bypassed rule violations: ...` 作为提示，属正常现象）。
+   如需规则对所有人（含维护者）生效，则移除该 bypass —— 届时变更只能走 PR。
+
 ## 发布
 
 由维护者打 tag 触发 CI 发布（`v*` → 校验 tag 与版本一致 → 测试 → 校验 → `npm publish --provenance`），详见 README 的 **Release Process**。
