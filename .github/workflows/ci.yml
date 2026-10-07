@@ -39,7 +39,27 @@ jobs:
         run: npm ci
 
       - name: Unit tests
-        run: npm test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee /tmp/test.log
+
+      # 把失败用例暴露成 annotation（workflow 日志需 admin 权限才能下载，
+      # 而 annotation 可匿名读取）—— 便于在无 token 环境下定位偶发失败
+      - name: Surface test failures
+        if: failure()
+        shell: bash
+        run: |
+          test -f /tmp/test.log || exit 0
+          {
+            echo "### 测试失败摘要"
+            echo '```'
+            grep -A 4 -E "^[[:space:]]+[0-9]+\) " /tmp/test.log | head -40
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          grep -A 4 -E "^[[:space:]]+[0-9]+\) " /tmp/test.log | head -24 | tr -d '\r' | while IFS= read -r line; do
+            echo "::error::$(printf '%s' "$line" | sed 's/%/%25/g')"
+          done
 
       # 守门人：包名一致性 / 依赖口径 / npm pack 产物白名单
       # （发布时由 prepublishOnly 触发，这里在每次 PR 上提前拦下）
