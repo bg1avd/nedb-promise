@@ -1,6 +1,6 @@
 {
   "name": "@raolin2025/nedb-promise",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "author": {
     "name": "Rao Lin",
     "email": "raolin@example.com"
@@ -43,7 +43,9 @@
   },
   "scripts": {
     "test": "./node_modules/.bin/mocha --reporter spec --timeout 10000",
-    "build:browser": "node browser-version/build-modern.js"
+    "build:browser": "node browser-version/build-modern.js",
+    "prepublish-check": "node scripts/prepublish-check.js",
+    "prepublishOnly": "node scripts/prepublish-check.js"
   },
   "main": "index.js",
   "browser": {

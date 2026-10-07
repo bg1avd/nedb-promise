@@ -2,7 +2,7 @@
 
 > **A modernized fork of [NeDB](https://github.com/louischatriot/nedb) with Promise/async-await support**
 
-[![npm version](https://img.shields.io/npm/v/nedb-promise.svg)](https://www.npmjs.com/package/nedb-promise)
+[![npm version](https://img.shields.io/npm/v/@raolin2025%2Fnedb-promise.svg)](https://www.npmjs.com/package/@raolin2025/nedb-promise)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 📦 About
@@ -12,7 +12,7 @@
 ### 🔥 Key Features
 
 - ✅ **Native Promise Support** - All APIs now support Promise/async-await
-- ✅ **Zero Dependencies** - Removed `underscore` and `async` dependencies
+- ✅ **No Legacy Dependencies** - Removed `underscore` and `async`（运行时仅剩 3 个：`binary-search-tree` / `localforage` / `mkdirp`）
 - ✅ **ES6+ Modernized** - Using native JavaScript methods
 - ✅ **100% Backward Compatible** - Your existing code still works
 - ✅ **Embedded & Persistent** - Same great features as NeDB
@@ -32,15 +32,17 @@
 ### Installation
 
 ```bash
-npm install nedb-promise --save
+npm install @raolin2025/nedb-promise --save
 # or
-yarn add nedb-promise
+yarn add @raolin2025/nedb-promise
 ```
+
+> ⚠️ **包名注意**：npm 上不带 scope 的 `nedb-promise` 是**另一个项目**（jrop 的 "promise wrapper around the nedb package"，2022 年后未再更新），与本 fork 无关。本 fork 的包名是 **`@raolin2025/nedb-promise`**，请务必使用 scoped 名安装。
 
 ### Usage with async/await (Recommended)
 
 ```javascript
-const Datastore = require('nedb-promise');
+const Datastore = require('@raolin2025/nedb-promise');
 const db = new Datastore({ filename: 'data.db' });
 
 async function main() {
@@ -75,7 +77,7 @@ main().catch(console.error);
 ### Usage with Callbacks (Backward Compatible)
 
 ```javascript
-const Datastore = require('nedb-promise');
+const Datastore = require('@raolin2025/nedb-promise');
 const db = new Datastore({ filename: 'data.db' });
 
 db.insert({ name: 'Bob', age: 25 }, function (err, doc) {
@@ -87,6 +89,41 @@ db.find({ age: { $gte: 18 } }, function (err, docs) {
   if (err) return console.error(err);
   console.log('Adults:', docs);
 });
+```
+
+---
+
+## 🪟 Windows Conda 环境使用指南
+
+如果你在 Windows 的 Conda `kmax` 环境中开发或使用本项目，请按照以下步骤操作：
+
+### 1. 激活 Conda 环境
+```bash
+conda activate kmax
+```
+
+> 注意：如果是在 Windows Command Prompt/PowerShell 中使用，需要先运行 `conda init` 初始化终端后再执行上述命令；如果使用 Git Bash/WSL，步骤一致。
+
+### 2. 安装依赖
+#### 作为项目依赖安装
+```bash
+npm install @raolin2025/nedb-promise --save
+# 或使用 yarn
+yarn add @raolin2025/nedb-promise
+```
+
+#### 开发本项目
+```bash
+# 克隆仓库到本地后
+npm install
+```
+
+### 3. 运行测试与开发
+```bash
+# 运行单元测试
+npm test
+
+# 本项目无额外构建步骤，直接修改代码即可
 ```
 
 ---
@@ -208,7 +245,7 @@ Migration is **100% seamless**. Simply replace the import:
 const Datastore = require('nedb');
 
 // After
-const Datastore = require('nedb-promise');
+const Datastore = require('@raolin2025/nedb-promise');
 ```
 
 All your existing callback-based code will continue to work. Additionally, you can now use Promise/async-await syntax!
@@ -221,7 +258,7 @@ All your existing callback-based code will continue to work. Additionally, you c
 |---------|----------------|--------------------------|
 | Promise Support | ❌ | ✅ |
 | async/await | ❌ | ✅ |
-| Dependencies | underscore, async | None |
+| Dependencies | underscore, async | 3 个（binary-search-tree / localforage / mkdirp）；已移除 underscore / async |
 | ES6+ Syntax | ❌ | ✅ |
 | Backward Compatible | - | ✅ 100% |
 | Browser Support | ✅ | ✅ |
@@ -238,21 +275,47 @@ npm install
 npm test
 ```
 
+### Pre-publish Checks
+
+发布前自动校验（`npm publish` 会通过 `prepublishOnly` 强制执行）：
+
+```bash
+npm run prepublish-check
+```
+
+检查内容：
+1. README 的安装命令引用的包名 == `package.json` 的 `name`（含无 scope 裸名/错误 badge 的负向断言）
+2. README 的依赖口径与 `package.json` 的 `dependencies` 一致（不得声称项目没有运行时依赖）
+3. `npm pack` 产出的文件清单不含 `test/` `benchmarks/` `test_lac/` `MODERNIZATION_*.md` `.npmrc` 等不应发布的内容
+
 ### Modernization Progress
 
 - [x] **P0**: Remove underscore/async, add Promise support
 - [x] **P1**: ES6 class refactoring
 - [x] **P2**: Performance optimizations
 - [x] **P4**: Stream API
-- [x] **纯 JS 模式**：不引入 TypeScript，依赖更少（零运行时依赖）
+- [x] **纯 JS 模式**：不引入 TypeScript，不增加任何构建/类型依赖（运行时依赖仅 3 个，见对比表）
 
-> **技术方向**：本项目坚持**纯 JavaScript** 模式，不添加 TypeScript 定义/构建工具，以保持零依赖、零额外构建步骤。
+> **技术方向**：本项目坚持**纯 JavaScript** 模式，不添加 TypeScript 定义/构建工具，保持零额外构建步骤与极简运行时依赖。
 
 See `MODERNIZATION_P0.md` / `MODERNIZATION_P1.md` for detailed changes.
 
 ---
 
 ## 📝 Changelog
+
+### Version 2.0.2
+
+- 📛 **文档/元数据修复**：README 全部安装命令与示例改为真实包名 `@raolin2025/nedb-promise`（此前写成无 scope 的 `nedb-promise`，会指向 npm 上 jrop 的另一个包）
+- 🏷️ npm badge 改为 scoped 编码 URL，不再显示其它项目的版本号
+- 📊 依赖口径修正：对比表 `Dependencies` 由 `None` 更正为实际的 3 个运行时依赖（此前 "Zero Dependencies" 仅指移除 underscore/async）
+- 🔒 新增 `scripts/prepublish-check.js` + `prepublishOnly`：发布前自动断言包名一致、依赖口径一致、tarball 不含测试/文档噪音
+- 📄 `MODERNIZATION_P1.md` 待办清单回填（浏览器构建、npm 发布均已完成）
+
+### Version 2.0.0 / 2.0.1
+
+- 🚀 P2：性能优化（投影查询提速约 60%）、esbuild 浏览器构建，极简运行时体积
+- 🧹 移除 tarball 中的测试/基准/文档噪音（`.npmignore` + `files` 白名单）
 
 ### Version 1.8.1 (Modernized)
 

@@ -217,14 +217,16 @@ await pipeline(
 
 > **技术方向**：坚持**纯 JavaScript** 模式，不引入 TypeScript，尽量减少依赖与构建成本。
 
+> **状态更新（2026-08-02，见 P2 提交与 README）**：下列待办已全部完成，本清单为 P1 当时的快照，保留以记录演进过程。
+
 1. ✅ **性能优化** — 已验证完成：
    - 投影路径避免双重 `deepCopy`（提升约 60-65%）
    - pick 投影用轻量 key 展开替代完整 modify 流水线
    - 持久化序列化改用数组 `join`
-2. ✅ **更完善的测试套件** — 修复无效 devDependencies（移除不存在的 `exec-time@^1.1.0` 等），`npm install && npm test` 可直接运行
-3. ⬜ **浏览器版本构建** — 更新 browserify 构建
-4. ❌ ~~TypeScript 类型定义~~ — **不采用**，坚持纯 JS 模式、零依赖
-5. ⬜ **npm 发布** — 发布为 `nedb-promise` v2.x
+2. ✅ **更完善的测试套件** — 修复无效 devDependencies（移除不存在的 `exec-time@^1.1.0` 等），`npm install && npm test` 可直接运行（当前 343 passing）
+3. ✅ **浏览器版本构建** — 已用 esbuild 替换无法解析 ES6+/async 的 browserify@2.25（`browser-version/build-modern.js`，`npm run build:browser`，产出 `out/nedb.js` / `out/nedb.min.js`）
+4. ❌ ~~TypeScript 类型定义~~ — **不采用**，坚持纯 JS 模式、零额外构建
+5. ✅ **npm 发布** — 已发布为 `@raolin2025/nedb-promise` v2.x（**注意**：无 scope 的 `nedb-promise` 是 npm 上另一个项目 jrop/nedb-promise，故必须使用 scoped 包名）
 
 ---
 
